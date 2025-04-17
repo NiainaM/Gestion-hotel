@@ -11,22 +11,34 @@ exports.create = async (req, res) => {
 };
 
 exports.findAll = async (req, res) => {
-  const admins = await Admin.findAll();
+  const admins = await Admin.findAll({ include: db.Personne });
   res.json(admins);
 };
 
 exports.findOne = async (req, res) => {
-  const admin = await Admin.findByPk(req.params.id);
+  const admin = await Admin.findByPk(req.params.id, { include: db.Personne });
   if (admin) res.json(admin);
   else res.status(404).json({ message: 'Not found' });
 };
 
 exports.update = async (req, res) => {
-  const updated = await Admin.update(req.body, { where: { id: req.params.id } });
-  res.json({ updated });
+  const admin = await Admin.findByPk(req.params.id);
+  if (admin) {
+    await db.Personne.update(req.body, { where: { id: admin.personneId } });
+    await Admin.update(req.body, { where: { id: req.params.id } });
+    res.json({ updated: true });
+  } else {
+    res.status(404).json({ message: 'Not found' });
+  }
 };
 
 exports.delete = async (req, res) => {
-  const deleted = await Admin.destroy({ where: { id: req.params.id } });
-  res.json({ deleted });
+  const admin = await Admin.findByPk(req.params.id, { include: db.Personne});
+  if (admin) {
+    await db.Personne.destroy({ where: { id: admin.personneId } });
+    await Admin.destroy({ where: { id: req.params.id } });
+    res.json({ deleted: true });
+  } else {
+    res.status(404).json({ message: 'Not found' });
+  }
 };
